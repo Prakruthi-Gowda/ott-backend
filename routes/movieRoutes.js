@@ -12,7 +12,7 @@ router.post('/', adminMiddleware, upload.fields([
   { name: 'movie', maxCount: 1 }
 ]), movieController.addMovie);
 // Get all movies
-router.get('/', movieController.getAll);
+router.get('/', adminMiddleware, movieController.getAll);
 // Get movie by id
 router.get('/:id', movieController.getById);
 // Update movie (admin only, with file upload)

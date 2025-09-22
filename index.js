@@ -19,6 +19,8 @@ app.use(cors({
   credentials: true, // if you use cookies/auth headers
 }));
 
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.use('/api/admin/movies', movieRoutes);
 app.use('/api/auth', authRoutes);
