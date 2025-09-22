@@ -1,0 +1,43 @@
+// Prisma schema for Movie model
+// Edit datasource with your MySQL credentials
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Movie {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  genre       String
+  releaseDate DateTime
+  description String?
+  banner      String   // URL or path to banner image
+  trailer     String   // URL or path to trailer video
+  movie       String   // URL or path to movie file
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   // 'user' or 'admin'
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  movies    Movie[]
+  createdAt DateTime @default(now())
+}
