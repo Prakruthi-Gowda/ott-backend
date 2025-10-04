@@ -97,64 +97,31 @@ const authController = {
         }
     },
 
-    // register: async (req, res) => {
-    //     try {
-    //         const { name, email, password, role } = req.body;
-
-    //         if (!name || !email || !password || !role) {
-    //             return res.status(400).json({ error: 'All fields are required' });
-    //         }
-
-    //         const hashedPassword = await bcrypt.hash(password, 10);
-
-    //         const user = await prisma.user.create({
-    //             data: { name, email, password: hashedPassword, role },
-    //         });
-
-    //         const token = jwt.sign(
-    //             { userId: user.id, role: user.role },
-    //             process.env.JWT_SECRET,
-    //             { expiresIn: '1d' }
-    //         );
-
-    //         res.status(201).json({ message: 'User registered', user, token });
-    //     } catch (error) {
-    //         res.status(500).json({ error: error.message });
-    //     }
-    // },
-
     register: async (req, res) => {
-    try {
-        const { name, email, password, role } = req.body;
+        try {
+            const { name, email, password, role } = req.body;
 
-        if (!name || !email || !password || !role) {
-            return res.status(400).json({ error: 'All fields are required' });
+            if (!name || !email || !password || !role) {
+                return res.status(400).json({ error: 'All fields are required' });
+            }
+
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            const user = await prisma.user.create({
+                data: { name, email, password: hashedPassword, role },
+            });
+
+            const token = jwt.sign(
+                { userId: user.id, role: user.role },
+                process.env.JWT_SECRET,
+                { expiresIn: '1d' }
+            );
+
+            res.status(201).json({ message: 'User registered', user, token });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
-
-        // Check if user already exists
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ error: 'Email already in use' });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const user = await prisma.user.create({
-            data: { name, email, password: hashedPassword, role },
-        });
-
-        const token = jwt.sign(
-            { userId: user.id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '1d' }
-        );
-
-        res.status(201).json({ message: 'User registered', user, token });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-},
-
+    },
 
     login: async (req, res) => {
         try {
