@@ -32,6 +32,7 @@ model User {
   password  String
   role      String   // 'user' or 'admin'
   createdAt DateTime @default(now())
+  subscriptions Subscription[]
 }
 
 model Category {
@@ -40,4 +41,27 @@ model Category {
   slug      String   @unique
   movies    Movie[]
   createdAt DateTime @default(now())
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+model Subscription {
+  id                    Int                @id @default(autoincrement())
+  userId                Int
+  user                  User               @relation(fields: [userId], references: [id])
+  plan                  String
+  status                SubscriptionStatus @default(ACTIVE)
+  price                 Float
+  currency              String             @default("INR")
+  startsAt              DateTime           @default(now())
+  endsAt                DateTime?
+  stripeSubscriptionId  String?            @unique
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 }
