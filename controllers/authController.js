@@ -160,6 +160,23 @@ const authController = {
             res.status(500).json({ error: error.message });
         }
     },
+
+    // Get subscriptions for authenticated user
+    getSubscriptions: async (req, res) => {
+        try {
+            const userId = req.user?.userId;
+            if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+
+            const subscriptions = await prisma.subscription.findMany({
+                where: { userId: Number(userId) },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            res.status(200).json({ success: true, data: subscriptions });
+        } catch (error) {
+            res.status(500).json({ success: false,error: error.message });
+        }
+    },
 };
 
 // Middleware to verify token & check blacklist
