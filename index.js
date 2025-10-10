@@ -6,6 +6,7 @@ import movieRoutes from './routes/movieRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import userRoutes from './routes/userRoutes.js'; // ✅ import userRoutes
+import paymentRoutes from './routes/paymentRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/admin/movies', movieRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/categories', categoryRoutes);
 app.use('/api/admin/users', userRoutes); // ✅ users route
+app.use('/api/payment', paymentRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3001;
