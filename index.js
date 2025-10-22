@@ -7,6 +7,9 @@ import authRoutes from './routes/authRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import userRoutes from './routes/userRoutes.js'; // ✅ import userRoutes
 import paymentRoutes from './routes/paymentRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
+
+
 
 dotenv.config();
 const app = express();
@@ -45,6 +48,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin/categories', categoryRoutes);
 app.use('/api/admin/users', userRoutes); // ✅ users route
 app.use('/api/payment', paymentRoutes);
+
+app.use('/api/subscription', subscriptionRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3001;

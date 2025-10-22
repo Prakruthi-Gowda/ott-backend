@@ -123,27 +123,82 @@ const authController = {
         }
     },
 
-    login: async (req, res) => {
-        try {
-            const { email, password } = req.body;
+    // login: async (req, res) => {
+    //     try {
+    //         const { email, password } = req.body;
 
+    //         const user = await prisma.user.findUnique({ where: { email } });
+    //         if (!user) return res.status(400).json({ error: 'Invalid credentials' });
+
+    //         const valid = await bcrypt.compare(password, user.password);
+    //         if (!valid) return res.status(400).json({ error: 'Invalid credentials' });
+
+    //         const token = jwt.sign(
+    //             { userId: user.id, role: user.role },
+    //             process.env.JWT_SECRET,
+    //             { expiresIn: '1d' }
+    //         );
+
+    //         res.status(200).json({ success: true, token });
+    //     } catch (error) {
+    //         res.status(500).json({ error: error.message });
+    //     }
+    // },
+    login: async (req, res) => {
+    try {
+        const { email, password, token } = req.body;
+
+        // Case 1: Login with email & password
+        if (email && password) {
             const user = await prisma.user.findUnique({ where: { email } });
             if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
             const valid = await bcrypt.compare(password, user.password);
             if (!valid) return res.status(400).json({ error: 'Invalid credentials' });
 
-            const token = jwt.sign(
+            const newToken = jwt.sign(
                 { userId: user.id, role: user.role },
                 process.env.JWT_SECRET,
                 { expiresIn: '1d' }
             );
 
-            res.status(200).json({ success: true, token });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
+            return res.status(200).json({
+                success: true,
+                token: newToken,
+                userId: user.id,
+                user // full user object
+            });
         }
-    },
+
+        // Case 2: Login via token only
+        if (token) {
+            if (tokenBlacklist.includes(token)) {
+                return res.status(401).json({ error: 'Token is invalid (logged out)' });
+            }
+
+            jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+                if (err) return res.status(403).json({ error: 'Invalid token' });
+
+                const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+                if (!user) return res.status(404).json({ error: 'User not found' });
+
+                return res.status(200).json({
+                    success: true,
+                    token,
+                    userId: user.id,
+                    user // full user object
+                });
+            });
+            return;
+        }
+
+        res.status(400).json({ error: 'Provide email/password or token' });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+},
+
 
     logout: async (req, res) => {
         try {
