@@ -1,122 +1,56 @@
-// import Razorpay from "razorpay";
-// import crypto from "crypto";
-
-// const razorpay = new Razorpay({
-//   key_id: process.env.RAZORPAY_KEY_ID,
-//   key_secret: process.env.RAZORPAY_KEY_SECRET,
-// });
-
-// // Create order
-// export const createOrder = async (req, res) => {
-//   try {
-//     const { amount } = req.body;
-
-//     if (!amount) return res.status(400).json({ success: false, message: "Amount is required" });
-
-//     const order = await razorpay.orders.create({
-//       amount, // amount in paise
-//       currency: "INR",
-//       receipt: `receipt_order_${Date.now()}`,
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       id: order.id,
-//       amount: order.amount,
-//       currency: order.currency,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ success: false, message: "Error creating order" });
-//   }
-// };
-
-// // Verify payment
-// export const verifyPayment = async (req, res) => {
-//   try {
-//     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-
-//     const body = razorpay_order_id + "|" + razorpay_payment_id;
-//     const expectedSignature = crypto
-//       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-//       .update(body)
-//       .digest("hex");
-
-//     if (expectedSignature === razorpay_signature) {
-//       res.status(200).json({ success: true, message: "Payment verified" });
-//     } else {
-//       res.status(400).json({ success: false, message: "Invalid signature" });
-//     }
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ success: false, message: "Error verifying payment" });
-//   }
-// };
-
-import Razorpay from "razorpay";
-import crypto from "crypto";
+import Stripe from "stripe";
 import prisma from "../prismaClient.js";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Step 1 — Create Order
-export const createOrder = async (req, res) => {
+// =======================
+// CREATE PAYMENT INTENT
+// =======================
+export const createPaymentIntent = async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, currency = "usd" } = req.body;
 
     if (!amount) {
-      return res.status(400).json({ success: false, message: "Amount is required" });
+      return res.status(400).json({
+        success: false,
+        message: "Amount is required",
+      });
     }
 
-    const order = await razorpay.orders.create({
+    const paymentIntent = await stripe.paymentIntents.create({
       amount,
-      currency: "INR",
-      receipt: `receipt_order_${Date.now()}`,
+      currency,
+      automatic_payment_methods: { enabled: true },
     });
 
-    res.status(200).json({
+    res.json({
       success: true,
-      id: order.id,
-      amount: order.amount,
-      currency: order.currency,
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Error creating order" });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error creating payment intent" });
   }
 };
 
-// Step 2 — Verify Payment
+// =======================
+// VERIFY PAYMENT
+// =======================
 export const verifyPayment = async (req, res) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      userId,
-      plan,
-      price,
-    } = req.body;
+    const { paymentIntentId, userId, plan, price } = req.body;
 
-    if (!userId) {
-      return res.status(400).json({ success: false, message: "User ID missing" });
+    if (!paymentIntentId || !userId)
+      return res.status(400).json({ message: "Missing fields" });
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.status !== "succeeded") {
+      return res.status(400).json({ message: "Payment not completed" });
     }
 
-    // Verify signature
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body)
-      .digest("hex");
-
-    if (expectedSignature !== razorpay_signature) {
-      return res.status(400).json({ success: false, message: "Invalid signature" });
-    }
-
-    // Save in DB
     const result = await prisma.$transaction(async (tx) => {
       const subscription = await tx.subscription.create({
         data: {
@@ -124,39 +58,29 @@ export const verifyPayment = async (req, res) => {
           plan,
           price,
           status: "ACTIVE",
-          currency: "INR",
+          currency: paymentIntent.currency.toUpperCase(),
         },
       });
 
-      const payment = await tx.payment.create({
+      await tx.payment.create({
         data: {
           userId,
           subscriptionId: subscription.id,
-          amount: price,
-          currency: "INR",
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
           status: "PAID",
-          razorpayPaymentId: razorpay_payment_id,
-          notes: {
-            razorpay_order_id,
-            razorpay_signature,
-          },
+          stripePaymentId: paymentIntent.id,
+          notes: paymentIntent,
         },
       });
 
-      return { subscription, payment };
+      return subscription;
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Payment verified successfully",
-      data: result,
-    });
-  } catch (err) {
-    console.error("❌ Transaction failed:", err);
-    res.status(500).json({
-      success: false,
-      message: "Error verifying payment",
-      error: err.message,
-    });
+    res.json({ success: true, data: result });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error verifying payment" });
   }
 };
