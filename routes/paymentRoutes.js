@@ -1,21 +1,9 @@
-// import express from "express";
-// import { createOrder, verifyPayment } from "../controllers/paymentController.js";
-
-// const router = express.Router();
-
-// router.post("/create-order", createOrder);
-// router.post("/verify-payment", verifyPayment);
-
-// export default router;
-
-
 import express from "express";
-import { createPaymentIntent, verifyPayment } from "../controllers/paymentController.js";
+import { createCheckoutSession, verifyCheckoutSession } from "../controllers/paymentController.js";
 
 const router = express.Router();
 
-router.post("/create-payment-intent", createPaymentIntent);
-router.post("/verify-payment", verifyPayment);
+router.post("/create-checkout-session", createCheckoutSession);
+router.post("/verify-checkout-session", verifyCheckoutSession);
 
 export default router;
-

@@ -1,42 +1,68 @@
 import prisma from '../prismaClient.js';
 
-export const createSubscriptionWithPayment = async (req, res) => {
-  const { userId, plan, price, razorpayPaymentId } = req.body;
-
+// Get user's subscription
+export const getUserSubscription = async (req, res) => {
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      // 1️⃣ Create subscription
-      const subscription = await tx.subscription.create({
-        data: {
-         userId: user?.id,
-          plan,
-          price,
-          status: 'ACTIVE',
-          currency: 'INR',
-        },
-      });
+    const { userId } = req.params;
 
-      // 2️⃣ Create payment linked to subscription
-      const payment = await tx.payment.create({
-        data: {
-          userId,
-          subscriptionId: subscription.id,
-          amount: price,
-          currency: 'INR',
-          status: 'PAID',
-          razorpayPaymentId,
-        },
-      });
-
-      return { subscription, payment };
+    const subscription = await prisma.subscription.findFirst({
+      where: { userId: Number(userId), status: 'ACTIVE' },
+      orderBy: { createdAt: 'desc' },
+      include: { payment: true },
     });
 
-    res.status(201).json({
-      message: 'Subscription and payment created successfully',
-      data: result,
+    if (!subscription) {
+      return res.status(404).json({ message: "No subscription found" });
+    }
+
+    res.json(subscription);
+
+  } catch (error) {
+    console.error("Get subscription error:", error);
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+};
+
+export const updateUserSubscription = async (req, res) => {
+  try {
+    const { userId, planName, amount } = req.body;
+
+    if (!userId || !planName || !amount) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    const subscription = await prisma.subscription.upsert({
+      where: { userId: Number(userId) },
+      update: {
+        planName,
+        price: amount,
+        status: "ACTIVE",
+        updatedAt: new Date(),
+      },
+      create: {
+        userId: Number(userId),
+        planName,
+        price: amount,
+        status: "ACTIVE",
+      },
+    });
+
+    await prisma.payment.create({
+      data: {
+        userId: Number(userId),
+        subscriptionId: subscription.id,
+        amount,
+        status: "SUCCESS",
+        method: "Stripe",
+      },
+    });
+
+    res.json({
+      message: "Subscription updated successfully",
+      subscription,
     });
   } catch (error) {
-    console.error('Transaction failed:', error);
-    res.status(500).json({ error: 'Transaction failed', details: error.message });
+    console.error("Update subscription error:", error);
+    res.status(500).json({ error: "Server error", details: error.message });
   }
 };
