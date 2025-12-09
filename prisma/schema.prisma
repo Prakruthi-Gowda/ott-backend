@@ -1,6 +1,3 @@
-// Prisma schema for Movie model
-// Edit datasource with your MySQL credentials
-
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -10,6 +7,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ------------------------- Movie -------------------------
 model Movie {
   id          Int      @id @default(autoincrement())
   title       String
@@ -17,25 +15,27 @@ model Movie {
   genre       String
   releaseDate DateTime
   description String?
-  banner      String   // URL or path to banner image
-  trailer     String   // URL or path to trailer video
-  movie       String   // URL or path to movie file
+  banner      String // URL or path to banner image
+  trailer     String // URL or path to trailer video
+  movie       String // URL or path to movie file
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id])
   createdAt   DateTime @default(now())
 }
 
+// ------------------------- User -------------------------
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   // 'user' or 'admin'
-  createdAt DateTime @default(now())
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  password      String
+  role          String // 'user' or 'admin'
+  createdAt     DateTime       @default(now())
   subscriptions Subscription[]
-  payments   Payment[]
+  payments      Payment[]
 }
 
+// ------------------------- Category -------------------------
 model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
@@ -44,6 +44,7 @@ model Category {
   createdAt DateTime @default(now())
 }
 
+// ------------------------- Subscription -------------------------
 enum SubscriptionStatus {
   TRIAL
   ACTIVE
@@ -53,38 +54,38 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id                    Int                @id @default(autoincrement())
-  userId                Int
-  user                  User               @relation(fields: [userId], references: [id])
-  plan                  String
-  status                SubscriptionStatus @default(ACTIVE)
-  price                 Float
-  currency              String             @default("INR")
-  startsAt              DateTime           @default(now())
-  endsAt                DateTime?
-  stripeSubscriptionId  String?            @unique
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  payments               Payment[]
+  id                   Int                @id @default(autoincrement())
+  userId               Int
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                 String
+  status               SubscriptionStatus @default(ACTIVE)
+  price                Float
+  currency             String             @default("INR")
+  startsAt             DateTime           @default(now())
+  endsAt               DateTime?
+  stripeSubscriptionId String?            @unique
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  payments             Payment[]          @relation("SubscriptionPayments")
 }
 
+// ------------------------- Payment -------------------------
 enum PaymentStatus {
-  CREATED
-  PAID
+  SUCCESS
+  PENDING
   FAILED
-  REFUNDED
 }
 
 model Payment {
-  id                 Int            @id @default(autoincrement())
-  userId             Int
-  user               User           @relation(fields: [userId], references: [id])
-  subscriptionId     Int?
-  subscription       Subscription?  @relation(fields: [subscriptionId], references: [id])
-  amount             Float
-  currency           String         @default("INR")
-  status             PaymentStatus  @default(CREATED)
-  razorpayPaymentId  String?
-  notes              Json?
-  createdAt          DateTime       @default(now())
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId  Int?
+  subscription    Subscription? @relation(fields: [subscriptionId], references: [id], name: "SubscriptionPayments", onDelete: Cascade)
+  amount          Float
+  currency        String
+  status          PaymentStatus
+  stripePaymentId String?
+  notes           Json?
+  createdAt       DateTime      @default(now())
 }
