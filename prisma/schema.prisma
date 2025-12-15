@@ -25,15 +25,27 @@ model Movie {
 
 // ------------------------- User -------------------------
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  email         String         @unique
-  password      String
-  role          String // 'user' or 'admin'
-  createdAt     DateTime       @default(now())
-  subscriptions Subscription[]
-  payments      Payment[]
+  id        Int     @id @default(autoincrement())
+  name      String
+  email     String @unique
+  password  String
+  phone     String?
+  role      String
+  createdAt DateTime @default(now())
 }
+
+//---------------password-----------------------------
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
 
 // ------------------------- Category -------------------------
 model Category {
@@ -53,21 +65,31 @@ enum SubscriptionStatus {
   EXPIRED
 }
 
+
 model Subscription {
   id                   Int                @id @default(autoincrement())
   userId               Int
   user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   plan                 String
-  status               SubscriptionStatus @default(ACTIVE)
+  status               SubscriptionStatus @default(TRIAL)
+
   price                Float
-  currency             String             @default("INR")
+  currency             String             @default("AUD")
+
   startsAt             DateTime           @default(now())
   endsAt               DateTime?
+
   stripeSubscriptionId String?            @unique
+
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
+
   payments             Payment[]          @relation("SubscriptionPayments")
+
+  @@index([userId, status])
 }
+
 
 // ------------------------- Payment -------------------------
 enum PaymentStatus {

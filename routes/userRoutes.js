@@ -4,7 +4,10 @@ import { verifyToken } from '../controllers/authController.js';
 
 const router = express.Router();
 
-// Protected route to get users
-router.get('/:id', verifyToken, userController.getUsers);
+// ADMIN → Get all users
+router.get('/', verifyToken, userController.getUsers);
+
+// USER → Update profile by ID
+router.put('/update/:id', verifyToken, userController.updateProfile);
 
 export default router;
