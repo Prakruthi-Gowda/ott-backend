@@ -31,11 +31,11 @@ export const userController = {
   // USER: Update profile using userId from request
   updateProfile: async (req, res) => {
   try {
-    const userId = req.params.id; // ✅ from URL
+    const userId = Number(req.params.id); // ✅ from URL
     const { name, email, phone, password } = req.body;
 
     // Optional: allow only self-update
-    if (req.user.userId !== userId) {
+    if (req.user.userId != userId) {
       return res.status(403).json({ error: 'Unauthorized access' });
     }
 

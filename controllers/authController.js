@@ -151,6 +151,7 @@ const authController = {
 // Middleware to verify token & check blacklist
 export const verifyToken = (req, res, next) => {
     const authHeader = req.headers.authorization;
+    console.log(authHeader, 'token')
     if (!authHeader) return res.status(401).json({ error: 'No token provided' });
 
     const token = authHeader.split(' ')[1];
