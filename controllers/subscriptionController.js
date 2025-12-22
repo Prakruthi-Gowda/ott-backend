@@ -126,7 +126,7 @@ export const updateUserSubscription = async (req, res) => {
       stripePaymentId,
       stripeSubscriptionId,
     } = req.body;
-
+    console.log(req.body);
     if (!planName || amount == null) {
       return res.status(400).json({
         message: "Missing required fields: planName, amount",

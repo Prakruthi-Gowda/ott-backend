@@ -1,5 +1,6 @@
 # Environment variables for OTT backend
-DATABASE_URL="mysql://root:@localhost:3306/ottplatform"
+# DATABASE_URL="mysql://root:@localhost:3306/ottplatform"
+DATABASE_URL="mysql://root:jpr_FEB19@localhost:3306/ottplatform"
 PORT=3001
 JWT_SECRET="secret"
 RAZORPAY_KEY_ID=rzp_test_RTH38t4BROvUoA
