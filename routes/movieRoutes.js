@@ -33,5 +33,18 @@ router.delete('/:id', adminMiddleware, movieController.delete);
 // Public routes
 router.get('/', movieController.getAll); // Remove adminMiddleware for public access
 router.get('/:id', movieController.getById); // Can also be public
+// router.get("/movies/:slug", movieController.getBySlug);
+router.get("/:slug", async (req, res) => {
+  const { slug } = req.params;
 
+  const movie = await prisma.movie.findUnique({
+    where: { slug },
+  });
+
+  if (!movie) {
+    return res.status(404).json({ error: "Movie not found" });
+  }
+
+  res.json(movie);
+});
 export default router;

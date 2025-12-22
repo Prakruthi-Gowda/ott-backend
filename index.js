@@ -53,6 +53,7 @@ app.use('/uploads', express.static('uploads'));
 
 // Routes
 app.use('/api/admin/movies', movieRoutes);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/categories', categoryRoutes);
 app.use('/api/admin/users', userRoutes); // ✅ users route
